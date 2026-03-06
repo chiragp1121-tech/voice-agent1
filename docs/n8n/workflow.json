@@ -1,0 +1,55 @@
+{
+  "name": "Voice Agent End-to-End Workflow",
+  "nodes": [
+    {
+      "name": "Twilio Incoming Call",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "twilio-call",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "name": "Process Call in Voice Agent API",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "http://localhost:8000/webhooks/twilio/call?domain=ecommerce",
+        "method": "POST"
+      }
+    },
+    {
+      "name": "If Missed/Dropped",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.call_status}}",
+              "operation": "contains",
+              "value2": "dropped"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "CRM Callback Trigger",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "https://crm.example.com/api/callbacks",
+        "method": "POST"
+      }
+    }
+  ],
+  "connections": {
+    "Twilio Incoming Call": {
+      "main": [[{"node": "Process Call in Voice Agent API", "type": "main", "index": 0}]]
+    },
+    "Process Call in Voice Agent API": {
+      "main": [[{"node": "If Missed/Dropped", "type": "main", "index": 0}]]
+    },
+    "If Missed/Dropped": {
+      "main": [[{"node": "CRM Callback Trigger", "type": "main", "index": 0}], []]
+    }
+  }
+}
